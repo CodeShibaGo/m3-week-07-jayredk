@@ -75,8 +75,101 @@ Reference：
 - [讓我們來談談 CSRF](https://blog.techbridge.cc/2017/02/25/csrf-introduction/)
 
 ## 說明如何在 flask 專案中使用以下 csrf_token()語法
+> Note：觀看以下步驟前請確保已安裝 Flask-WTF
+>
+> 若尚未安裝可輸入 `pip install -U Flask-WTF`
+
+這裡分為兩種情況：有無使用 FlaskForm
+
+如果有，可以直接跳至 Step 2，並專注於 SECRET_KEY 的部分即可
+
+若沒有則從 Step 1 開始
+
+### Step 1：匯入 CSRFProtect 並套用至 app
+```python
+from flask import Flask,
+from flask_wtf.csrf import CSRFProtect
+
+app = Flask(__name__)
+csrf = CSRFProtect(app)
+```
+
+### Step 2：設定 SECRET_KEY
+```python
+from flask import Flask,
+from flask_wtf.csrf import CSRFProtect
+import secrets  # 第一步：匯入 secrets 
+
+secret_key = secrets.token_hex(32)  # 第二步：隨機產生一組 16 進制 32 字元的字串
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = secret_key  # 第三步：設定 SECRET_KEY
+csrf = CSRFProtect(app)
+```
+
+### Step 3：在 HTML forms 中使用
+
+#### 情況 1：有使用 FlaskForm
+```html
+<form method="post">
+    {{ form.csrf_token }}
+</form>
+```
+> Note： 還有一種寫法是 `form.hidden_tag()`，用於一次渲染多個 hidded field
+>
+> Reference:[Creating Forms - flask-wtf](https://flask-wtf.readthedocs.io/en/0.15.x/quickstart/#creating-forms)
+
+#### 情況 2：沒有使用 FlaskForm
+```html
+<form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+</form>
+```
+
+
+Reference：[CSRF Protection - flask-wtf](https://flask-wtf.readthedocs.io/en/0.15.x/csrf/)
 
 ## ajax 需不需要使用 csrf token 進行防禦？該如何使用？
+
+> Note：在開始前請確保有下列程式碼，否則會出錯
+
+```python
+from flask import Flask
+from flask_wtf.csrf import CSRFProtect
+
+app = Flask(__name__)
+csrf = CSRFProtect(app)
+```
+
+### 如何在使用者端（client side）透過 AJAX 夾帶 CSRF token？
+> Note：這部分文件寫的很爛，沒頭沒尾看不太懂
+>
+> 可以理解成頁面中可能有某些操作是 API call，例如上傳檔案、獲取資料等等
+>
+> 那這個 API call 也要防止 csrf token 的攻擊
+>
+> 因此伺服器端（flask application）可以在返回頁面的時候設定好哪個按鈕會執行 API call，並提前在 headers 中塞入 csrf token 
+
+#### 使用 axios
+```html
+<script type="text/javascript">
+    axios.defaults.headers.common["X-CSRFToken"] = "{{ csrf_token() }}";
+</script>
+```
+
+#### 使用 fetch
+```html
+<script type="text/javascript">
+  fetch('/your-api-endpoint', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': "{{ csrf_token() }}"  // Include the CSRF token in the headers
+    },
+    body: JSON.stringify({ data: 'your_data' })
+  })
+</script>
+```
 
 ## 如何使用 Virtualenv 建立環境？
 ```bash
