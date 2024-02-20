@@ -4,8 +4,12 @@ import sqlalchemy as sa
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm
+from app.forms import LoginForm, EditProfileForm
 from app.models import User
+
+from sqlalchemy import text
+from werkzeug.security import generate_password_hash
+from flask_wtf.csrf import generate_csrf
 
 @app.before_request
 def before_request():
@@ -56,15 +60,34 @@ def logout():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
+    
+    csrf_token = generate_csrf
+
+    if request.method == 'POST':
+        password = request.form['password']
+        password2 = request.form['password2']
+
+        if (password != password2): 
+            flash('password do not match')
+            return redirect(url_for('register'))
+        
+        user_info = {
+            'username': request.form['username'],
+            'email': request.form['email'],
+            'password_hash': generate_password_hash(password)
+        }
+
+        sql_query = text("""
+            INSERT INTO user (username, email, password_hash)
+            VALUES (:username, :email, :password_hash)
+        """)
+        db.session.execute(sql_query, user_info)
         db.session.commit()
+        
         flash('Congratulations, you are now a registered user!')
         return redirect(url_for('login'))
-    return render_template('register.html', title='Register', form=form)
+
+    return render_template('register.html', title='Register', csrf_token=csrf_token)
 
 @app.route('/user/<username>')
 @login_required
