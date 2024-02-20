@@ -110,6 +110,20 @@ csrf = CSRFProtect(app)
 ### Step 3：在 HTML forms 中使用
 
 #### 情況 1：有使用 FlaskForm
+> Note: LoginForm 為使用了 FlaskForm 的 class
+
+Step 1: 創建 LoginForm 後作為 form 參數傳遞至樣板
+```python
+from app.forms import LoginForm
+
+@app.route('/login', methods=['GET'])
+def login():
+    form = LoginForm()
+    
+    return render_template('login.html', title='Sign In', form=form)
+```
+
+Step 2:透過 `form.csrf_token` 即可渲染出 csrf token
 ```html
 <form method="post">
     {{ form.csrf_token }}
@@ -120,6 +134,18 @@ csrf = CSRFProtect(app)
 > Reference:[Creating Forms - flask-wtf](https://flask-wtf.readthedocs.io/en/0.15.x/quickstart/#creating-forms)
 
 #### 情況 2：沒有使用 FlaskForm
+
+Step 1:在 view function 先匯入 `generate_csrf`，並作為 csrf_token 參數傳送至樣板
+
+```python
+from flask_wtf.csrf import generate_csrf
+
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html', title='Sign In', csrf_token=generate_csrf)
+```
+
+Step 2:在樣版中直接透過 `csrf_token()` 使用
 ```html
 <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
