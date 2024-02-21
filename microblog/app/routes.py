@@ -37,19 +37,23 @@ def index():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = db.session.scalar(
-            sa.select(User).where(User.username == form.username.data))
-        if user is None or not user.check_password(form.password.data):
+    
+    if request.method == 'POST':
+        username = request.form['username']
+        sql_query = text(f"SELECT * FROM user where username='{username}'")
+        user = db.session.query(User).from_statement(sql_query).first()
+
+        if user is None or not user.check_password(request.form['password']):
             flash('Invalid username or password')
             return redirect(url_for('login'))
-        login_user(user, remember=form.remember_me.data)
+
+        login_user(user, remember=request.form.get('remember', False))
         next_page = request.args.get('next')
         if not next_page or urlsplit(next_page):
             next_page = url_for('index')
         return redirect(next_page)
-    return render_template('login.html', title='Sign In', form=form)
+
+    return render_template('login.html', title='Sign In', csrf_token=generate_csrf)
 
 @app.route('/logout')
 def logout():
