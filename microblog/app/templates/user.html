@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <table>
+  <table class="table table-hover">
     <tr valign="top">
-      <td><img src="{{ user.avatar(128) }}" alt="avatar"></td>
+      <td width="150px">
+        <a href="{{ url_for('user', username=user.username) }}">
+          <img src="{{ user.avatar(128) }}" alt="avatar">
+        </a>
+        
+      </td>
       <td>
         <h1>User: {{ user.username }}</h1>
         {% if user.about_me %}
@@ -22,13 +27,13 @@
         {% elif current_user.is_following(user) %}
         <form action="{{ url_for('unfollow', username=user.username )}}" method="post">
           {{ form.hidden_tag() }}
-          {{ form.submit(value='Unfollow') }}
+          {{ form.submit(value='Unfollow', class='btn btn-primary') }}
         </form>
 
         {% else %}
         <form action="{{ url_for('follow', username=user.username )}}" method="post">
           {{ form.hidden_tag() }}
-          {{ form.submit(value='Follow') }}
+          {{ form.submit(value='Follow', class='btn btn-primary') }}
         </form>
 
         {% endif %}
@@ -40,11 +45,18 @@
     {% include '_post.html' %}
   {% endfor %}
 
-  {% if prev_url %}
-  <a href="{{ prev_url }}">Newer posts</a>
-  {% endif %}
-
-  {% if next_url %}
-  <a href="{{ next_url }}">Older posts</a>
-  {% endif %}
+  <nav aria-label="Post navigation">
+    <ul class="pagination">
+      <li class="page-item{% if not prev_url %} disabled{% endif %}">
+        <a class="page-link" href="{{ prev_url }}">
+          <span aria-hidden="true">&larr;</span> Newer posts
+        </a>
+      </li>
+      <li class="page-item{% if not next_url %} disabled{% endif %}">
+        <a class="page-link" href="{{ next_url }}">
+          Older posts <span aria-hidden="true">&rarr;</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
 {% endblock %}
