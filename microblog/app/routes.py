@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from app import app, db
-from app.forms import EditProfileForm, EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
+from app.forms import EditProfileForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
 from app.models import User, Post
 from app.email import send_password_reset_email
 
@@ -126,8 +126,7 @@ def user(username):
     prev_url = url_for('user', username=user.username, page=posts.prev_num) \
         if posts.has_prev else None
     
-    form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts, next_url=next_url, prev_url=prev_url, form=form)
+    return render_template('user.html', user=user, posts=posts, next_url=next_url, prev_url=prev_url, csrf_token=generate_csrf)
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
@@ -147,9 +146,9 @@ def edit_profile():
 @app.route('/follow/<username>', methods=['POST'])
 @login_required
 def follow(username):
-    form = EmptyForm()
-    if form.validate_on_submit():
-        user = db.session.scalar(sa.select(User).where(User.username == username))
+    if request.method == 'POST':
+        sql_query = text(f"SELECT * FROM user WHERE username ='{username}'")
+        user = db.session.query(User).from_statement(sql_query).first()
         if user is None:
             flash(f'User {username} not found.')
             return redirect(url_for('index'))
@@ -166,9 +165,9 @@ def follow(username):
 @app.route('/unfollow/<username>', methods=['POST'])
 @login_required
 def unfollow(username):
-    form = EmptyForm()
-    if form.validate_on_submit():
-        user = db.session.scalar(sa.select(User).where(User.username == username))
+    if request.method == 'POST':
+        sql_query = text(f"SELECT * FROM user WHERE username ='{username}'")
+        user = db.session.query(User).from_statement(sql_query).first()
         if user is None:
             flash(f'User {username} not found.')
             return redirect(url_for('index'))
