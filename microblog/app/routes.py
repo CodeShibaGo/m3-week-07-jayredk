@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from app import app, db
-from app.forms import EditProfileForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
+from app.forms import EditProfileForm, PostForm
 from app.models import User, Post
 from app.email import send_password_reset_email
 
@@ -185,29 +185,29 @@ def unfollow(username):
 def reset_password_request():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-    form = ResetPasswordRequestForm()
-    if form.validate_on_submit():
-        user = db.session.scalar(sa.select(User).where(User.email == form.email.data))
+
+    if request.method == 'POST':
+        email = request.form['email']
+        sql_query = text(f"SELECT * FROM user WHERE email ='{email}'")
+        user = db.session.query(User).from_statement(sql_query).first()
         if user:
             send_password_reset_email(user)
         flash('Check your email for the instructions to reset your password')
         return redirect(url_for('login'))
-    return render_template('reset_password_request.html', title='Reset Password', form=form)
+    return render_template('reset_password_request.html', title='Reset Password', csrf_token=generate_csrf)
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    print('entry')
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     user = User.verify_reset_password_token(token)
     if not user:
-        print('not user')
         return redirect(url_for('index'))
-    print('enter')
-    form = ResetPasswordForm()
-    if form.validate_on_submit():
-        user.set_password(form.password.data)
+
+    if request.method == 'POST':
+        password = request.form['password']
+        user.set_password(password)
         db.session.commit()
         flash('Your password has been reset')
         return redirect(url_for('login'))
-    return render_template('reset_password.html', form=form)
+    return render_template('reset_password.html', csrf_token=generate_csrf)
