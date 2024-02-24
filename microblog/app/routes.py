@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from app import app, db
-from app.forms import EditProfileForm, PostForm
+from app.forms import EditProfileForm
 from app.models import User, Post
 from app.email import send_password_reset_email
 
@@ -22,9 +22,8 @@ def before_request():
 @app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
-    form = PostForm()
-    if form.validate_on_submit():
-        post = Post(body=form.post.data, author=current_user)
+    if request.method == 'POST':
+        post = Post(body=request.form['post'], author=current_user)
         db.session.add(post)
         db.session.commit()
         flash('Your post is now live!')
@@ -37,7 +36,7 @@ def index():
     prev_url = url_for('index', page=posts.prev_num) \
         if posts.has_prev else None
 
-    return render_template('index.html', title='Home page', form=form, posts=posts.items, next_url=next_url, prev_url=prev_url)
+    return render_template('index.html', title='Home page', csrf_token=generate_csrf, posts=posts.items, next_url=next_url, prev_url=prev_url)
 
 @app.route('/explore')
 @login_required

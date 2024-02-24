@@ -4,8 +4,16 @@
 {% block content %}
     <h1>Hello, {{ current_user.username }}!</h1>
 
-    {% if form %}
-        {{ wtf.quick_form(form) }}
+    {% if title == 'Home page' %}
+        <form novalidate="" action="" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label" for="post">Say something</label>
+                <textarea autofocus="" class="form-control" id="post" maxlength="140" minlength="1" name="post" required></textarea>
+            </div>
+
+            <input class="btn btn-primary mb-3" id="submit" name="submit" type="submit" value="Submit">
+        </form>
     {% endif %}
 
     {% for post in posts %}
